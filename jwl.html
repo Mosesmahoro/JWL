@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JWL Staff Attendance System</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style id="app-style">
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7fa;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .card {
+      background-color: skyblue;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+    
+    .btn {
+      transition: all 0.3s ease;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+    
+    .logo {
+      height: 60px;
+      width: auto;
+    }
+    
+    .clock {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #1e3a8a;
+    }
+
+    .table-container {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .hidden {
+      display: none;
+    }
+
+    .attendance-btn {
+      min-width: 150px;
+    }
+
+    @media (max-width: 768px) {
+      .clock {
+        font-size: 1.8rem;
+      }
+      
+      .attendance-btn {
+        min-width: 120px;
+      }
+    }
+    
+    /* Loading spinner */
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="bg-green">
+  <div class="min-h-screen">
+    <nav class="bg-blue-900 text-white shadow-lg">
+      <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <img src="C:\Users\RI DESIGN\Desktop\JWL\download.png" alt="dawnload" class="JWL">
+          <div>
+            <h1 class="text-2xl font-bold">JWL Staff Attendance</h1>
+            <p class="text-sm">Track your working hours efficiently</p>
+          </div>
+        </div>
+        <div id="admin-toggle" class="cursor-pointer">
+          <i class="fas fa-cog text-2xl"></i>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Admin Panel (hidden by default) -->
+    <div id="admin-panel" class="hidden bg-gray-200 border-b border-gray-300">
+      <div class="container mx-auto px-4 py-4">
+        <h2 class="text-xl font-bold mb-3 text-gray-800">Admin Panel</h2>
+        <div class="flex flex-col md:flex-row gap-4 items-end">
+          <div class="w-full md:w-1/2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Set Today's Access Code</label>
+            <input type="text" id="admin-code-input" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter access code for today">
+          </div>
+          <button id="save-code-btn" class="px-4 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition">
+            <i class="fas fa-save mr-2"></i> Save Code
+          </button>
+          <div class="flex-grow"></div>
+          <div class="flex space-x-2">
+            <button id="download-csv" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition">
+              <i class="fas fa-file-csv mr-2"></i> Download CSV
+            </button>
+            <button id="download-pdf" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition">
+              <i class="fas fa-file-pdf mr-2"></i> Download PDF
+            </button>
+            <button id="email-report" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition">
+              <i class="fas fa-envelope mr-2"></i> Email Report
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Current Date and Time -->
+        <div class="card p-6 col-span-1 md:col-span-3">
+          <div class="flex flex-col md:flex-row justify-between items-center">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-800" id="current-date">Loading date...</h2>
+              <p class="text-gray-600">Welcome to JWL Staff Attendance System</p>
+            </div>
+            <div class="clock mt-2 md:mt-0" id="current-time">00:00:00</div>
+          </div>
+        </div>
+
+        <!-- Staff Login -->
+        <div class="card p-6 col-span-1 md:col-span-1">
+          <h2 class="text-xl font-bold mb-4 text-gray-800">Staff Attendance</h2>
+          
+          <div id="login-form">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Staff ID</label>
+              <input type="text" id="staff-id" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter your staff ID">
+            </div>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Staff Name</label>
+              <input type="text" id="staff-name" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter your full name">
+            </div>
+            
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Daily Access Code</label>
+              <input type="text" id="access-code" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter today's access code">
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3">
+              <button id="sign-in-btn" class="attendance-btn px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition">
+                <i class="fas fa-sign-in-alt mr-2"></i> Sign In
+              </button>
+              
+              <button id="sign-out-break-btn" class="attendance-btn px-4 py-3 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition">
+                <i class="fas fa-coffee mr-2"></i> Sign Out (Break)
+              </button>
+              
+              <button id="return-break-btn" class="attendance-btn px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition">
+                <i class="fas fa-undo mr-2"></i> Return from Break
+              </button>
+              
+              <button id="check-out-btn" class="attendance-btn px-4 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition">
+                <i class="fas fa-sign-out-alt mr-2"></i> Check Out
+              </button>
+            </div>
+            
+            <div id="status-message" class="mt-4 text-center hidden"></div>
+          </div>
+        </div>
+
+        <!-- Today's Attendance Log -->
+        <div class="card p-6 col-span-1 md:col-span-2">
+          <h2 class="text-xl font-bold mb-4 text-gray-800">Today's Attendance Log</h2>
+          
+          <div class="table-container">
+            <table class="min-w-full bg-white">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="py-2 px-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Time</th>
+                  <th class="py-2 px-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Staff ID</th>
+                  <th class="py-2 px-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Name</th>
+                  <th class="py-2 px-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Event</th>
+                </tr>
+              </thead>
+              <tbody id="attendance-log">
+                <!-- Attendance logs will be populated here -->
+                <tr>
+                  <td colspan="4" class="py-4 text-center text-gray-500">No attendance records for today yet</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg hidden">
+      <span id="toast-message"></span>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+      <div class="bg-white p-5 rounded-lg">
+        <div class="spinner"></div>
+        <p class="text-center mt-3">Processing...</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="bg-gray-800 text-white py-4">
+    <div class="container mx-auto px-4 text-center">
+      <p>© 2025 JWL Staff Attendance System. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script id="app-script">
+    document.addEventListener('DOMContentLoaded', function() {
+      // DOM Elements
+      const adminToggle = document.getElementById('admin-toggle');
+      const adminPanel = document.getElementById('admin-panel');
+      const saveCodeBtn = document.getElementById('save-code-btn');
+      const adminCodeInput = document.getElementById('admin-code-input');
+      const currentDateEl = document.getElementById('current-date');
+      const currentTimeEl = document.getElementById('current-time');
+      const signInBtn = document.getElementById('sign-in-btn');
+      const signOutBreakBtn = document.getElementById('sign-out-break-btn');
+      const returnBreakBtn = document.getElementById('return-break-btn');
+      const checkOutBtn = document.getElementById('check-out-btn');
+      const staffIdInput = document.getElementById('staff-id');
+      const staffNameInput = document.getElementById('staff-name');
+      const accessCodeInput = document.getElementById('access-code');
+      const attendanceLog = document.getElementById('attendance-log');
+      const statusMessage = document.getElementById('status-message');
+      const downloadCsvBtn = document.getElementById('download-csv');
+      const downloadPdfBtn = document.getElementById('download-pdf');
+      const emailReportBtn = document.getElementById('email-report');
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toast-message');
+      const loadingOverlay = document.getElementById('loading-overlay');
+
+      // Initialize date and time
+      updateDateTime();
+      setInterval(updateDateTime, 1000);
+
+      // Load today's access code from localStorage
+      if (localStorage.getItem('jwlAccessCode')) {
+        adminCodeInput.value = localStorage.getItem('jwlAccessCode');
+      }
+
+      // Load today's attendance records
+      loadAttendanceRecords();
+
+      // Event listeners
+      adminToggle.addEventListener('click', toggleAdminPanel);
+      saveCodeBtn.addEventListener('click', saveAccessCode);
+      signInBtn.addEventListener('click', () => recordAttendance('Sign In'));
+      signOutBreakBtn.addEventListener('click', () => recordAttendance('Sign Out (Break)'));
+      returnBreakBtn.addEventListener('click', () => recordAttendance('Return from Break'));
+      checkOutBtn.addEventListener('click', () => recordAttendance('Check Out'));
+      downloadCsvBtn.addEventListener('click', downloadCsv);
+      downloadPdfBtn.addEventListener('click', downloadPdf);
+      emailReportBtn.addEventListener('click', emailReport);
+
+      // Functions
+      function updateDateTime() {
+        const now = new Date();
+        
+        // Format date: Monday, January 1, 2025
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        currentDateEl.textContent = now.toLocaleDateString('en-US', options);
+        
+        // Format time: 13:45:30
+        currentTimeEl.textContent = now.toLocaleTimeString('en-US', {
+          hour12: true,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+      }
+
+      function toggleAdminPanel() {
+        adminPanel.classList.toggle('hidden');
+      }
+
+      function saveAccessCode() {
+        const code = adminCodeInput.value.trim();
+        
+        if (!code) {
+          showToast('Please enter an access code', 'error');
+          return;
+        }
+        
+        // Save the access code to localStorage
+        localStorage.setItem('jwlAccessCode', code);
+        showToast('Access code saved successfully!', 'success');
+      }
+
+      function validateInputs() {
+        const staffId = staffIdInput.value.trim();
+        const staffName = staffNameInput.value.trim();
+        const accessCode = accessCodeInput.value.trim();
+        const savedAccessCode = localStorage.getItem('jwlAccessCode');
+        
+        if (!staffId) {
+          showToast('Please enter your staff ID', 'error');
+          return false;
+        }
+        
+        if (!staffName) {
+          showToast('Please enter your name', 'error');
+          return false;
+        }
+        
+        if (!accessCode) {
+          showToast('Please enter the access code', 'error');
+          return false;
+        }
+        
+        if (!savedAccessCode) {
+          showToast('No access code has been set for today', 'error');
+          return false;
+        }
+        
+        if (accessCode !== savedAccessCode) {
+          showToast('Invalid access code', 'error');
+          return false;
+        }
+        
+        return true;
+      }
+
+      function recordAttendance(eventType) {
+        if (!validateInputs()) {
+          return;
+        }
+        
+        showLoading(true);
+        
+        // Simulate API call delay
+        setTimeout(() => {
+          const now = new Date();
+          const staffId = staffIdInput.value.trim();
+          const staffName = staffNameInput.value.trim();
+          
+          // Create attendance record
+          const record = {
+            timestamp: now.toISOString(),
+            displayTime: now.toLocaleTimeString('en-US', {
+              hour12: true,
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit'
+            }),
+            staffId: staffId,
+            staffName: staffName,
+            eventType: eventType
+          };
+          
+          // Save to localStorage
+          saveAttendanceRecord(record);
+          
+          // Update UI
+          updateAttendanceLog(record);
+          
+          // Show success message
+          showToast(`${eventType} recorded successfully!`, 'success');
+          
+          // Clear form fields
+          accessCodeInput.value = '';
+          
+          showLoading(false);
+        }, 1000);
+      }
+
+      function saveAttendanceRecord(record) {
+        const today = new Date().toISOString().split('T')[0];
+        const key = `jwlAttendance_${today}`;
+        
+        // Get existing records for today
+        let records = JSON.parse(localStorage.getItem(key)) || [];
+        
+        // Add new record
+        records.push(record);
+        
+        // Save back to localStorage
+        localStorage.setItem(key, JSON.stringify(records));
+      }
+
+      function loadAttendanceRecords() {
+        const today = new Date().toISOString().split('T')[0];
+        const key = `jwlAttendance_${today}`;
+        
+        // Get records from localStorage
+        const records = JSON.parse(localStorage.getItem(key)) || [];
+        
+        // Clear existing table content
+        attendanceLog.innerHTML = '';
+        
+        if (records.length === 0) {
+          attendanceLog.innerHTML = `
+            <tr>
+              <td colspan="4" class="py-4 text-center text-gray-500">No attendance records for today yet</td>
+            </tr>
+          `;
+          return;
+        }
+        
+        // Populate the table
+        records.forEach(record => {
+          updateAttendanceLog(record, false);
+        });
+      }
+
+      function updateAttendanceLog(record, prepend = true) {
+        // Clear "no records" message if it exists
+        if (attendanceLog.innerHTML.includes('No attendance records')) {
+          attendanceLog.innerHTML = '';
+        }
+        
+        const row = document.createElement('tr');
+        row.className = 'border-t';
+        
+        // Set background color based on event type
+        let bgColorClass = '';
+        switch (record.eventType) {
+          case 'Sign In':
+            bgColorClass = 'bg-green-50';
+            break;
+          case 'Sign Out (Break)':
+            bgColorClass = 'bg-yellow-50';
+            break;
+          case 'Return from Break':
+            bgColorClass = 'bg-blue-50';
+            break;
+          case 'Check Out':
+            bgColorClass = 'bg-red-50';
+            break;
+        }
+        
+        row.classList.add(bgColorClass);
+        
+        row.innerHTML = `
+          <td class="py-3 px-3">${record.displayTime}</td>
+          <td class="py-3 px-3">${record.staffId}</td>
+          <td class="py-3 px-3">${record.staffName}</td>
+          <td class="py-3 px-3">
+            <span class="px-2 py-1 rounded-full text-xs ${getEventTagClass(record.eventType)}">
+              ${record.eventType}
+            </span>
+          </td>
+        `;
+        
+        if (prepend && attendanceLog.firstChild) {
+          attendanceLog.insertBefore(row, attendanceLog.firstChild);
+        } else {
+          attendanceLog.appendChild(row);
+        }
+      }
+
+      function getEventTagClass(eventType) {
+        switch (eventType) {
+          case 'Sign In':
+            return 'bg-green-100 text-green-800';
+          case 'Sign Out (Break)':
+            return 'bg-yellow-100 text-yellow-800';
+          case 'Return from Break':
+            return 'bg-blue-100 text-blue-800';
+          case 'Check Out':
+            return 'bg-red-100 text-red-800';
+          default:
+            return 'bg-gray-100 text-gray-800';
+        }
+      }
+
+      function downloadCsv() {
+        showLoading(true);
+        
+        // Simulate API call
+        setTimeout(() => {
+          showToast('CSV report has been generated and downloaded', 'success');
+          showLoading(false);
+        }, 2000);
+      }
+
+      function downloadPdf() {
+        showLoading(true);
+        
+        // Simulate API call
+        setTimeout(() => {
+          showToast('PDF report has been generated and downloaded', 'success');
+          showLoading(false);
+        }, 2000);
+      }
+
+      function emailReport() {
+        showLoading(true);
+        
+        // Simulate API call
+        setTimeout(() => {
+          showToast('Email report has been sent to HR', 'success');
+          showLoading(false);
+        }, 2000);
+      }
+
+      function showToast(message, type = 'success') {
+        toastMessage.textContent = message;
+        
+        // Set the color based on the message type
+        if (type === 'success') {
+          toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg';
+        } else if (type === 'error') {
+          toast.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-md shadow-lg';
+        }
+        
+        // Show the toast
+        toast.classList.remove('hidden');
+        
+        // Hide after 3 seconds
+        setTimeout(() => {
+          toast.classList.add('hidden');
+        }, 3000);
+      }
+
+      function showLoading(show) {
+        if (show) {
+          loadingOverlay.classList.remove('hidden');
+        } else {
+          loadingOverlay.classList.add('hidden');
+        }
+      }
+    });
+  </script>
+</body>
+</html>
